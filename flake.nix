@@ -50,18 +50,32 @@
 
             # Local Postgres setup
             export PGDATA=$PWD/.pgdata
+            export PGHOST=$PWD/.pgsocket
             export PGHOST=localhost
             export PGPORT=5432
             export PGUSER=postgres
+
+            mkdir -p "$PGHOST"
 
             if [ ! -d "$PGDATA" ]; then
               echo "📦 Initializing local Postgres cluster in .pgdata"
               initdb -D "$PGDATA" >/dev/null
             fi
 
-            echo "👉 Start Postgres with: pg_ctl -D .pgdata -l logfile start"
-            echo "👉 Stop Postgres with:  pg_ctl -D .pgdata stop"
-          '';
+            # Aliases
+            alias pgstart='pg_ctl -D .pgdata -l logfile -o "-k $PGHOST" start'
+            alias pgstop='pg_ctl -D .pgdata stop'
+            alias pgstatus='pg_ctl -D .pgdata status'
+            alias pglog='tail -f logfile'
+
+            echo ""
+            echo "🗄  Postgres commands:"
+            echo "   pgstart   → start database"
+            echo "   pgstop    → stop database"
+            echo "   pgstatus  → check status"
+            echo "   pglog     → live logs"
+            echo ""
+            '';
         };
       });
 }
