@@ -51,11 +51,20 @@
             export PGPORT=5432
             export PGUSER=postgres
             mkdir "$PGHOST"
+            
+            export PATH="$PWD/scripts:$PATH"
 
             if [ ! -d "$PGDATA" ]; then
               echo "📦 Initializing local Postgres cluster in .pgdata"
-              initdb -D "$PGDATA" >/dev/null
+            initdb -D "$PGDATA" >/dev/null
             fi
+            echo "🛠 Dev shell ready"
+            echo "DB commands:"
+            echo "  db-start   → start database"
+            echo "  db-stop    → stop database"
+            echo "  db-reset   → wipe & recreate"
+            echo "  db-psql    → open SQL shell"
+            echo "  db-seed    → run schema/seed"
             '';
         };
       });
