@@ -55,6 +55,7 @@ logfile
 # Database (local Postgres)
 # =========================
 .pgdata/
+.pgsocket/
 *.sql.gz
 *.dump
 
