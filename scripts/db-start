@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+set -e
+
+export PGDATA=${PGDATA:-$PWD/.pgdata}
+export PGHOST=${PGHOST:-$PWD/.pgsocket}
+
+mkdir -p "$PGHOST"
+
+if [ ! -d "$PGDATA/base" ]; then
+    echo "📦 Initializing cluster..."
+    initdb -D "$PGDATA" -U postgres -A trust >/dev/null
+fi
+
+if pg_ctl -D "$PGDATA" status >/dev/null 2>&1; then
+    echo "🟢 Postgres already running"
+else
+    echo "🚀 Starting Postgres..."
+    pg_ctl -D "$PGDATA" -l logfile -o "-k $PGHOST" start
+fi
+
+echo "👤 Ensuring app_user role..."
+psql -h "$PGHOST" -U postgres -d postgres <<EOF >/dev/null
+DO \$\$
+BEGIN
+  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname='app_user') THEN
+    CREATE ROLE app_user LOGIN PASSWORD 'devpass';
+    ALTER ROLE app_user CREATEDB;
+  END IF;
+END
+\$\$;
+EOF
+
+echo "🗄 Ensuring DB exists..."
+psql -h "$PGHOST" -U postgres -tc "SELECT 1 FROM pg_database WHERE datname='escuela_musica'" | grep -q 1 ||
+    createdb -h "$PGHOST" -U postgres -O app_user escuela_musica
+
+echo "✅ DB ready"
