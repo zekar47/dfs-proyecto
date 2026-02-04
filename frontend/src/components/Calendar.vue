@@ -14,7 +14,10 @@
           <!-- Lunes a viernes -->
           <tr v-for="slot in weekdaySlots" :key="slot">
             <td>{{ slot }}</td>
-            <td v-for="day in days.slice(0,5)" :key="day" :id="`${day}-${slot}`">
+            <td v-for="day in days.slice(0,5)" 
+                :key="day" 
+                :id="`${day}-${slot}`"
+                @click="openOptions(day, slot)">
               {{ calendar[`${day}-${slot}`] || "" }}
             </td>
             <td></td>
@@ -23,14 +26,16 @@
           <tr v-for="slot in saturdaySlots" :key="slot">
             <td>{{ slot }}</td>
             <td v-for="day in days.slice(0,5)" :key="day"></td>
-            <td :id="`Sábado-${slot}`">{{ calendar[`Sábado-${slot}`] || "" }}</td>
+            <td :id="`Sábado-${slot}`" @click="openOptions('Sábado', slot)">
+              {{ calendar[`Sábado-${slot}`] || "" }}
+            </td>
           </tr>
         </tbody>
       </table>
       <p>{{ message }}</p>
     </div>
 
-    <!-- Clases asignadas (panel a la derecha) -->
+    <!-- Panel lateral -->
     <div class="card asignadas">
       <h2>Clases asignadas</h2>
       <ul>
@@ -49,6 +54,22 @@
         </li>
       </ul>
     </div>
+
+    <!-- Modal de opciones -->
+    <div v-if="showOptions" class="modal">
+      <div class="modal-content">
+        <h3>Opciones para {{ selectedSlot }}</h3>
+        <div v-if="calendar[selectedSlot]">
+          <p>Clase actual: {{ calendar[selectedSlot] }}</p>
+          <button @click="removeClass">Eliminar clase</button>
+        </div>
+        <div v-else>
+          <p>No hay clase asignada.</p>
+          <button @click="addDummyClass">Agregar clase</button>
+        </div>
+        <button @click="closeOptions">Cerrar</button>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -58,12 +79,15 @@ import { reactive, ref, computed } from 'vue'
 const days = ["Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"]
 const calendar = reactive({})
 const message = ref("")
+const showOptions = ref(false)
+const selectedSlot = ref("")
 
 const availableClasses = ref([
-  
+  { id: 1, dia: "Martes", hora: "14:30", instrumento: "Flauta", maestro: "Prof. Sánchez", salon: "104" },
+  { id: 2, dia: "Viernes", hora: "16:00", instrumento: "Piano", maestro: "Prof. García", salon: "102" }
 ])
 
-// Generar bloques de lunes a viernes
+// Horarios
 const weekdaySlots = computed(() => {
   const slots = []
   let start = new Date(0,0,0,14,30)
@@ -73,8 +97,6 @@ const weekdaySlots = computed(() => {
   }
   return slots
 })
-
-// Generar bloques del sábado
 const saturdaySlots = computed(() => {
   const slots = []
   let start = new Date(0,0,0,10,0)
@@ -85,10 +107,27 @@ const saturdaySlots = computed(() => {
   return slots
 })
 
+// Funciones
+function openOptions(day, slot) {
+  selectedSlot.value = `${day}-${slot}`
+  showOptions.value = true
+}
+function closeOptions() {
+  showOptions.value = false
+}
+function removeClass() {
+  delete calendar[selectedSlot.value]
+  message.value = "❌ Clase eliminada."
+  closeOptions()
+}
+function addDummyClass() {
+  calendar[selectedSlot.value] = "Nueva clase\nProfesor X\nSalón Y"
+  message.value = "✅ Clase agregada."
+  closeOptions()
+}
 function hasConflict(dia, hora) {
   return !!calendar[`${dia}-${hora}`]
 }
-
 function addClass(clase) {
   if (hasConflict(clase.dia, clase.hora)) {
     message.value = "⚠️ Conflicto: Ya existe una clase en ese horario."
@@ -114,10 +153,10 @@ function addClass(clase) {
   flex: 1 1 300px;
 }
 .calendario {
-  flex: 2 1 600px; /* calendario más ancho */
+  flex: 2 1 600px;
 }
 .asignadas {
-  flex: 1 1 300px; /* panel lateral */
+  flex: 1 1 300px;
   background: #f9f9f9;
 }
 .clases {
@@ -131,6 +170,7 @@ th, td {
   border: 1px solid #ccc;
   padding: 10px;
   text-align: center;
+  cursor: pointer;
 }
 th {
   background: #2c3e50;
@@ -154,6 +194,31 @@ li {
   cursor: pointer;
 }
 li:hover {
+  background: #3498db;
+  color: #fff;
+}
+/* Modal */
+.modal {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.5);
+  display: flex; justify-content: center; align-items: center;
+}
+.modal-content {
+  background: #fff;
+  padding: 20px;
+  border-radius: 8px;
+  min-width: 300px;
+}
+button {
+  margin: 5px;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+button:hover {
   background: #3498db;
   color: #fff;
 }
