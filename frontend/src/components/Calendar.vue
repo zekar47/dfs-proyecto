@@ -41,7 +41,7 @@
       <h2>Clases asignadas</h2>
       <ul>
         <li v-for="(info, key) in calendar" :key="key">
-          {{ key }} → {{ info }}
+          {{ key }} → {{ info.texto }}
         </li>
       </ul>
     </div>
@@ -58,32 +58,38 @@
         <div v-else>
           <p>No hay clase asignada.</p>
 
-          <!-- Dropdowns -->
           <label>Maestro:</label>
           <select v-model="selectedMaestro">
             <option disabled value="">-- elegir --</option>
-            <option v-for="m in maestros" :key="m.id" :value="m.id">
-              {{ m.nombre }} ({{ m.especialidad }})
-            </option>
+            <option v-for="m in maestros" :key="m.id" :value="m.id">{{ m.nombre }}</option>
+            <option value="nuevo">+ Agregar Nuevo Maestro</option>
           </select>
+          <div v-if="selectedMaestro === 'nuevo'" class="nuevo-input">
+            <input v-model="nuevoNombreMaestro" placeholder="Nombre del maestro">
+            <input v-model="nuevaEspecialidad" placeholder="Especialidad (ej. Piano)">
+          </div>
 
           <label>Alumno:</label>
           <select v-model="selectedAlumno">
             <option disabled value="">-- elegir --</option>
-            <option v-for="a in alumnos" :key="a.id" :value="a.id">
-              {{ a.nombre }}
-            </option>
+            <option v-for="a in alumnos" :key="a.id" :value="a.id">{{ a.nombre }}</option>
+            <option value="nuevo">+ Agregar Nuevo Alumno</option>
           </select>
+          <div v-if="selectedAlumno === 'nuevo'" class="nuevo-input">
+            <input v-model="nuevoNombreAlumno" placeholder="Nombre del alumno">
+          </div>
 
-          <label>Instrumento:</label>
+          <label>Clase/Instrumento:</label>
           <select v-model="selectedClase">
             <option disabled value="">-- elegir --</option>
-            <option v-for="c in clases" :key="c.id" :value="c.id">
-              {{ c.nombre }}
-            </option>
+            <option v-for="c in clases" :key="c.id" :value="c.id">{{ c.nombre }}</option>
+            <option value="nuevo">+ Agregar Nueva Clase</option>
           </select>
+          <div v-if="selectedClase === 'nuevo'" class="nuevo-input">
+            <input v-model="nuevoNombreClase" placeholder="Nombre (ej. Violín Básico)">
+          </div>
 
-          <button @click="confirmarClase">Agregar clase</button>
+          <button @click="procesarYConfirmar">Confirmar Todo</button>
         </div>
         <button @click="closeOptions">Cerrar</button>
       </div>
@@ -100,9 +106,10 @@ const props = defineProps({
   maestros: Array,
   alumnos: Array,
   clases: Array,
+  onCrearRecurso: Function
 })
 
-const emit = defineEmits(["agregar-clase","eliminar-clase"])
+const emit = defineEmits(["agregar-clase","eliminar-clase", "crear-recurso"])
 
 const days = ["Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"]
 const calendar = reactive({})
@@ -115,6 +122,12 @@ const selectedMaestro = ref("")
 const selectedAlumno = ref("")
 const selectedClase = ref("")
 const selectedSalon = ref("")
+
+// Variables temporales para los nuevos registros
+const nuevoNombreMaestro = ref("")
+const nuevaEspecialidad = ref("")
+const nuevoNombreAlumno = ref("")
+const nuevoNombreClase = ref("")
 
 // Horarios de sábado: 10:00 → 13:45
 const saturdaySlots = computed(() => {
@@ -138,26 +151,46 @@ const weekdaySlots = computed(() => {
   return slots
 })
 
-// Sincronizar el calendario con los datos de la API
-watch(() => props.horarios, (nuevosHorarios) => {
-  // Limpiamos el objeto reactivo sin perder la referencia
-  Object.keys(calendar).forEach(key => delete calendar[key])
+// Función centralizada para construir el calendario
+const construirCalendario = () => {
+  // 1. Validar que tengamos todos los datos necesarios antes de mapear
+  if (!props.horarios.length || !props.maestros.length || !props.clases.length) {
+    return;
+  }
 
-  nuevosHorarios.forEach(h => {
-    const horaLimpia = h.hora_inicio.slice(0, 5)
-    const key = `${h.dia_semana}-${horaLimpia}`
-    
-    // Buscamos nombres para mostrar en la celda
-    const maestro = props.maestros.find(m => m.id === h.profesor_id)
-    const clase = props.clases.find(c => c.id === h.clase_id)
+  // 2. Limpiar sin perder reactividad
+  Object.keys(calendar).forEach(key => delete calendar[key]);
 
-    // Guardamos el objeto completo (incluyendo el ID de la DB)
+  // 3. Mapear
+  props.horarios.forEach(h => {
+    // Manejo de seguridad para la hora (API devuelve HH:mm:ss o HH:mm)
+    const horaLimpia = h.hora_inicio ? h.hora_inicio.slice(0, 5) : "";
+    const dia = h.dia_semana || h.dia;
+
+    if (!horaLimpia || !dia) return;
+
+    const key = `${dia}-${horaLimpia}`;
+
+    const maestro = props.maestros.find(m => m.id === h.profesor_id);
+    const clase = props.clases.find(c => c.id === h.clase_id);
+
     calendar[key] = {
       id: h.id, 
-      texto: `${clase?.nombre || 'Clase'} - ${maestro?.nombre || 'Prof'}`
-    }
-  })
-}, { immediate: true, deep: true })
+      texto: `${clase?.nombre || 'Instrumento'} - ${maestro?.nombre || 'Prof'}`
+    };
+  });
+};
+
+// Escuchar cambios en CUALQUIERA de las props (por si llegan en diferentes tiempos)
+watch([() => props.horarios, () => props.maestros, () => props.clases], () => {
+  construirCalendario();
+}, { deep: true });
+
+// Forzar la ejecución al cargar el componente
+import { onMounted } from 'vue';
+onMounted(() => {
+  construirCalendario();
+});
 
 // Funciones
 function openOptions(day, slot) {
@@ -166,6 +199,70 @@ function openOptions(day, slot) {
 }
 function closeOptions() {
   showOptions.value = false
+}
+
+async function procesarYConfirmar() {
+  message.value = "Procesando...";
+
+  let maestroId = selectedMaestro.value;
+  let alumnoId = selectedAlumno.value;
+  let claseId = selectedClase.value;
+
+  // 1. Si es un maestro nuevo, lo creamos primero
+  if (maestroId === 'nuevo') {
+    const res = await props.onCrearRecurso('profesores', { 
+      nombre: nuevoNombreMaestro.value, 
+      especialidad: nuevaEspecialidad.value 
+    });
+    if (res) maestroId = res.id;
+  }
+
+  // 2. Si es un alumno nuevo
+  if (alumnoId === 'nuevo') {
+    const res = await props.onCrearRecurso('alumnos', { 
+      nombre: nuevoNombreAlumno.value,
+      edad: 10 // O puedes agregar un input de edad
+    });
+    if (res) alumnoId = res.id;
+  }
+
+  // 3. Si es una clase nueva
+  if (claseId === 'nuevo') {
+    const res = await props.onCrearRecurso('clases', { 
+      nombre: nuevoNombreClase.value,
+      descripcion: "Nueva clase agregada desde calendario"
+    });
+    if (res) claseId = res.id;
+  }
+
+  // 4. Finalmente, con todos los IDs reales, creamos el horario
+  if (maestroId && alumnoId && claseId) {
+    const [dia, hora] = selectedSlot.value.split("-");
+    const [h, m] = hora.split(':').map(Number);
+    const fin = new Date(0, 0, 0, h, m + 45).toTimeString().slice(0, 5);
+
+    emit("agregar-clase", {
+      dia_semana: dia,
+      hora_inicio: hora,
+      hora_fin: fin,
+      profesor_id: maestroId,
+      alumno_id: alumnoId,
+      clase_id: claseId
+    });
+
+    // Limpiar campos y cerrar
+    resetCamposNuevos();
+    closeOptions();
+  } else {
+    message.value = "⚠️ Error al crear los nuevos registros.";
+  }
+}
+
+function resetCamposNuevos() {
+  nuevoNombreMaestro.value = "";
+  nuevaEspecialidad.value = "";
+  nuevoNombreAlumno.value = "";
+  nuevoNombreClase.value = "";
 }
 
 function removeClass() {
@@ -335,5 +432,20 @@ button:hover {
 .btn-danger:hover {
   background: #800;
   color: #fff;
+}
+
+.nuevo-input {
+  background: #f0f7ff;
+  padding: 10px;
+  border-left: 4px solid #3498db;
+  margin: 5px 0 15px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.nuevo-input input {
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
 }
 </style>

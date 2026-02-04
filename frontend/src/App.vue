@@ -37,6 +37,29 @@ async function eliminarClase(id) {
   horarios.value = horarios.value.filter(h => h.id !== id)
 }
 
+async function crearRecurso(tipo, datos) {
+  try {
+    const res = await fetch(`http://localhost:3000/${tipo}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(datos)
+    });
+    const nuevoRegistro = await res.json();
+    
+    if (res.ok) {
+      // Actualizamos la lista correspondiente para que aparezca en el dropdown
+      if (tipo === 'profesores') profesores.value.push(nuevoRegistro);
+      if (tipo === 'alumnos') alumnos.value.push(nuevoRegistro);
+      if (tipo === 'clases') clases.value.push(nuevoRegistro);
+      
+      return nuevoRegistro; // Retornamos el objeto con su nuevo ID
+    } else {
+      alert("Error: " + nuevoRegistro.error);
+    }
+  } catch (e) {
+    console.error("Error de red", e);
+  }
+}
 
 </script>
 
@@ -53,7 +76,9 @@ async function eliminarClase(id) {
         :horarios="horarios" 
         :clases="clases" 
         :alumnos="alumnos"
-        :maestros="profesores"  @agregar-clase="agregarClase"
+        :maestros="profesores"
+        :onCrearRecurso="crearRecurso"
+        @agregar-clase="agregarClase"
         @eliminar-clase="eliminarClase"
       />
     </main>
