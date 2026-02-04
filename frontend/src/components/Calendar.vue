@@ -16,7 +16,7 @@
             <td>{{ slot }}</td>
             <td v-for="day in days.slice(0,5)" :key="day"></td>
             <td :id="`Sábado-${slot}`" @click="openOptions('Sábado', slot)">
-              {{ calendar[`Sábado-${slot}`] || "" }}
+              {{ calendar[`Sábado-${slot}`]?.texto || "" }}
             </td>
           </tr>
 
@@ -27,7 +27,7 @@
                 :key="day" 
                 :id="`${day}-${slot}`"
                 @click="openOptions(day, slot)">
-              {{ calendar[`${day}-${slot}`] || "" }}
+              {{ calendar[`${day}-${slot}`]?.texto || "" }}
             </td>
             <td></td>
           </tr>
@@ -52,8 +52,8 @@
         <h3>Opciones para {{ selectedSlot }}</h3>
 
         <div v-if="calendar[selectedSlot]">
-          <p>Clase actual: {{ calendar[selectedSlot] }}</p>
-          <button @click="removeClass">Eliminar clase</button>
+          <p>Clase actual: {{ calendar[selectedSlot].texto }}</p>
+          <button class="btn-danger" @click="removeClass">Eliminar clase</button>
         </div>
         <div v-else>
           <p>No hay clase asignada.</p>
@@ -138,22 +138,24 @@ const weekdaySlots = computed(() => {
   return slots
 })
 
-// Escuchar cambios en los horarios que vienen del padre (API)
-watch(() => props.horarios, (newHorarios) => {
-  // Limpiamos el calendario local
+// Sincronizar el calendario con los datos de la API
+watch(() => props.horarios, (nuevosHorarios) => {
+  // Limpiamos el objeto reactivo sin perder la referencia
   Object.keys(calendar).forEach(key => delete calendar[key])
-  
-  // Llenamos con lo que viene de la API
-  newHorarios.forEach(h => {
-    // Ajustamos el formato de la hora de la API (10:00:00 -> 10:00)
-    const horaLimpia = h.hora_inicio ? h.hora_inicio.slice(0, 5) : h.hora
-    const key = `${h.dia_semana || h.dia}-${horaLimpia}`
+
+  nuevosHorarios.forEach(h => {
+    const horaLimpia = h.hora_inicio.slice(0, 5)
+    const key = `${h.dia_semana}-${horaLimpia}`
     
-    // Buscamos los nombres para mostrar algo bonito en la celda
-    const m = props.maestros.find(ma => ma.id === h.profesor_id)
-    const c = props.clases.find(cl => cl.id === h.clase_id)
-    
-    calendar[key] = `${c?.nombre || 'Clase'} con ${m?.nombre || 'Prof.'}`
+    // Buscamos nombres para mostrar en la celda
+    const maestro = props.maestros.find(m => m.id === h.profesor_id)
+    const clase = props.clases.find(c => c.id === h.clase_id)
+
+    // Guardamos el objeto completo (incluyendo el ID de la DB)
+    calendar[key] = {
+      id: h.id, 
+      texto: `${clase?.nombre || 'Clase'} - ${maestro?.nombre || 'Prof'}`
+    }
   })
 }, { immediate: true, deep: true })
 
@@ -165,12 +167,16 @@ function openOptions(day, slot) {
 function closeOptions() {
   showOptions.value = false
 }
+
 function removeClass() {
-  emit("eliminar-clase", selectedSlot.value)
-  delete calendar[selectedSlot.value]
-  message.value = "❌ Clase eliminada."
-  closeOptions()
+  const claseAsignada = calendar[selectedSlot.value]
+  if (claseAsignada && claseAsignada.id) {
+    // Enviamos el ID real de la base de datos al padre
+    emit("eliminar-clase", claseAsignada.id)
+    closeOptions()
+  }
 }
+
 function confirmarClase() {
   if (!selectedMaestro.value || !selectedAlumno.value || !selectedClase.value) {
     message.value = "⚠️ Debes seleccionar todos los campos.";
@@ -219,6 +225,24 @@ async function agregarClase(nuevaClase) {
   } catch (error) {
     console.error("Error de red:", error);
     alert("No se pudo conectar con el servidor.");
+  }
+}
+
+async function eliminarClase(id) {
+  try {
+    const res = await fetch(`http://localhost:3000/horarios/${id}`, {
+      method: "DELETE"
+    })
+
+    if (res.ok) {
+      // Filtramos el array local para que Vue reaccione y borre la celda
+      horarios.value = horarios.value.filter(h => h.id !== id)
+      console.log(`Horario ${id} eliminado correctamente`)
+    } else {
+      alert("No se pudo eliminar de la base de datos")
+    }
+  } catch (error) {
+    console.error("Error al eliminar:", error)
   }
 }
 
@@ -304,7 +328,12 @@ button {
   cursor: pointer;
 }
 button:hover {
-  background: #3498
-    color #fff;
+  background: #3498;
+  color : #fff;
+}
+
+.btn-danger:hover {
+  background: #800;
+  color: #fff;
 }
 </style>
