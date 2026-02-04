@@ -1,114 +1,154 @@
-## 🧩 1. Requisitos
+# 🎵 Sistema de Gestión - Escuela de Música AARDEM
 
-Necesitas tener instalado:
+Bienvenido al repositorio oficial del proyecto **AARDEM**, una solución integral para la gestión de horarios, alumnos y clases, construida con tecnologías modernas de desarrollo web.
 
-* **Nix** con flakes habilitados
-* Git
+---
 
-No necesitas instalar Node ni Postgres manualmente — Nix lo provee todo.
-Es posible utilizar el proyecto sin `nix`, instalando postgres, node y las dependencias manualmente, pero se recomienda usar `nix` para mayor reproducibilidad y estabilidad.
+## 🚀 Tecnologías Utilizadas
 
---
+### **Frontend**
 
-## 📥 2. Clonar el repositorio
+* **Vue.js 3 (Composition API):** Para una interfaz reactiva y moderna.
+* **Vite:** Bundler de última generación para un desarrollo ultra rápido.
+* **CSS Moderno:** Diseño modular y componentes escalables.
+
+### **Backend**
+
+* **Node.js & Express.js:** Servidor robusto para el manejo de la API REST.
+* **CORS:** Configurado para comunicación segura entre dominios.
+* **PostgreSQL:** Base de datos relacional para la persistencia de datos complejos.
+
+---
+
+## 🛠️ Arquitectura del Sistema
+
+### 🎨 Frontend (Interfaz de Usuario)
+
+Se implementó una estructura de componentes modulares donde destaca `Calendar.vue`. Este componente gestiona la lógica de la agenda semanal.
+
+* **Funcionalidad:** Visualización de horarios (08:00 a 21:00), asignación de clases mediante interacción directa y paneles laterales para gestión de catálogo.
+* **Estado:** Reactividad optimizada con la sintaxis `<script setup>`.
+
+### ⚙️ Backend (Servidor API)
+
+El corazón del sistema corre sobre **Express**, gestionando las rutas y la lógica de negocio.
+
+* **Endpoints:** Rutas preparadas para el manejo de usuarios, profesores, alumnos y horarios.
+* **Seguridad:** Implementación de middlewares para validación y control de acceso.
+
+### 📊 Base de Datos (PostgreSQL)
+
+Diseño de base de datos relacional llamada `escuela_alumnos` que incluye:
+
+* **Gestión de Roles:** Diferenciación entre Admin, Profesores y Alumnos.
+* **Control de Solapamientos:** Restricciones lógicas para evitar que un profesor o aula tenga dos clases al mismo tiempo.
+* **Esquema:** Tablas de login, correos electrónicos, cursos y descripciones detalladas.
+
+---
+
+## 🧩 1. Requisitos Previos
+
+Para garantizar la estabilidad, este proyecto utiliza **Nix**.
+
+* **Nix** con flakes habilitados.
+* **Git**.
+
+*Nota: Nix provee Node.js y Postgres automáticamente. Si no usas Nix, deberás instalarlos manualmente en tu sistema.*
+
+---
+
+## 📥 2. Instalación y Configuración
+
+### Clonar el repositorio
 
 ```bash
 git clone https://github.com/zekar47/dfs-proyecto
 cd dfs-proyecto
+
 ```
 
----
+### Entrar al entorno de desarrollo
 
-## 🧪 3. Entrar al entorno de desarrollo
-
-Esto instala automáticamente Node, Postgres, pnpm, etc.
+Esto configurará automáticamente Node, Postgres y pnpm.
 
 ```bash
 nix develop
-```
 
-Cada vez que vuelvas al proyecto, ejecuta este comando.
+```
 
 ---
 
-## 🗄 4. Iniciar base de datos local
+## 🗄️ 3. Configuración de Base de Datos
 
-El proyecto usa una base de datos Postgres local dentro de la carpeta del proyecto.
+El proyecto incluye scripts automatizados para facilitar la configuración inicial.
 
-> ❗ Dentro del entorno de desarrollo, la carpeta `scripts/` se agrega al $PATH.
+1. **Iniciar la DB local:**
 ```bash
 db-start
+
 ```
 
-Este comando:
 
-* Crea la base de datos si no existe
-* Crea el usuario `app_user`
-* Crea la DB `escuela_musica`
-* Arranca el servidor
-
----
-
-## 🌱 5. Crear tablas y datos iniciales
-
+*(Crea el usuario `app_user`, la DB `escuela_musica` y arranca el servidor Postgres).*
+2. **Cargar tablas y semillas (Seed):**
 ```bash
 db-seed
+
 ```
 
-Esto ejecuta el script SQL con todas las tablas y datos de prueba.
+
+*(Ejecuta el SQL con la estructura de tablas y datos de prueba).*
 
 ---
 
-## 📦 6. Instalar dependencias del backend
+## 🔌 4. Puesta en marcha del Servidor (Backend)
+
+1. Navega a la carpeta y levanta el servicio:
 
 ```bash
 cd backend
 pnpm install
-```
-
----
-
-## ▶️ 7. Iniciar el servidor API
-
-```bash
 pnpm dev
-```
-
-Deberías ver:
 
 ```
-🚀 API running on http://localhost:3000
-```
+
+2. **Verificación:** Deberías ver `🚀 API running on http://localhost:3000`.
+Puedes probarlo con: `curl http://localhost:3000`
 
 ---
 
-# 🧪 8. Probar que todo funciona
+## 💻 5. Puesta en marcha del Cliente (Frontend)
 
-### Test rápido
+En una **nueva terminal**:
+
+1. Instala y corre el servidor de desarrollo:
 
 ```bash
-curl http://localhost:3000
-```
-
-Respuesta esperada:
-
-```json
-{ "status": "API running 🎵" }
-```
-
----
-
-# 9. Preparar el frontend
-(En otra terminal)
-Instalar dependencias
-```
 cd frontend
 pnpm install
-```
-
-# 10. Servir el frontend
-```
 pnpm dev
+
 ```
 
-Se servirá en localhost:5173
+2. Abre tu navegador en: `http://localhost:5173`
+
+---
+
+## 📸 Galería del Proyecto
+
+Aquí se muestran las capturas de pantalla de los diferentes módulos del sistema:
+
+| Interfaz de Calendario | Respuesta del API |
+| --- | --- |
+|  |  |
+
+| Diagrama de DB / Tablas | Vistas Adicionales |
+| --- | --- |
+|  |  |
+|  |  |
+
+---
+
+*Desarrollado con ❤️ para la Escuela de Música AARDEM.*
+
+¿Te gustaría que redactara una sección de "Contribución" o que añada más detalles técnicos sobre los modelos de la base de datos?
