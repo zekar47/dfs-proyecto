@@ -140,15 +140,6 @@ Aquí se muestran las capturas de pantalla de los diferentes módulos del sistem
 
 | Interfaz de Calendario | Respuesta del API |
 | --- | --- |
-|![](images/2026-02-03-235706.png) |  |
+|![](images/2026-02-03-235706.png) | ![](images/2026-02-04-000515.png) |
 
-| Diagrama de DB / Tablas | Vistas Adicionales |
-| --- | --- |
-|  |  |
-|  |  |
 
----
-
-*Desarrollado con ❤️ para la Escuela de Música AARDEM.*
-
-¿Te gustaría que redactara una sección de "Contribución" o que añada más detalles técnicos sobre los modelos de la base de datos?
