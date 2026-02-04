@@ -140,7 +140,7 @@ Aquí se muestran las capturas de pantalla de los diferentes módulos del sistem
 
 | Interfaz de Calendario | Respuesta del API |
 | --- | --- |
-|  |  |
+|![](images/2026-02-03-235706.png) |  |
 
 | Diagrama de DB / Tablas | Vistas Adicionales |
 | --- | --- |
