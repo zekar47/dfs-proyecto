@@ -68,6 +68,7 @@
             <input v-model="nuevoNombreMaestro" placeholder="Nombre del maestro">
             <input v-model="nuevaEspecialidad" placeholder="Especialidad (ej. Piano)">
           </div>
+          <br>
 
           <label>Alumno:</label>
           <select v-model="selectedAlumno">
@@ -78,6 +79,7 @@
           <div v-if="selectedAlumno === 'nuevo'" class="nuevo-input">
             <input v-model="nuevoNombreAlumno" placeholder="Nombre del alumno">
           </div>
+          <br>
 
           <label>Clase/Instrumento:</label>
           <select v-model="selectedClase">
@@ -88,6 +90,7 @@
           <div v-if="selectedClase === 'nuevo'" class="nuevo-input">
             <input v-model="nuevoNombreClase" placeholder="Nombre (ej. Violín Básico)">
           </div>
+          <br>
 
           <button @click="procesarYConfirmar">Confirmar Todo</button>
         </div>
