@@ -11,7 +11,16 @@
           </tr>
         </thead>
         <tbody>
-          <!-- Lunes a viernes -->
+          <!-- Sábado primero -->
+          <tr v-for="slot in saturdaySlots" :key="slot">
+            <td>{{ slot }}</td>
+            <td v-for="day in days.slice(0,5)" :key="day"></td>
+            <td :id="`Sábado-${slot}`" @click="openOptions('Sábado', slot)">
+              {{ calendar[`Sábado-${slot}`] || "" }}
+            </td>
+          </tr>
+
+          <!-- Lunes a viernes después -->
           <tr v-for="slot in weekdaySlots" :key="slot">
             <td>{{ slot }}</td>
             <td v-for="day in days.slice(0,5)" 
@@ -21,14 +30,6 @@
               {{ calendar[`${day}-${slot}`] || "" }}
             </td>
             <td></td>
-          </tr>
-          <!-- Sábado -->
-          <tr v-for="slot in saturdaySlots" :key="slot">
-            <td>{{ slot }}</td>
-            <td v-for="day in days.slice(0,5)" :key="day"></td>
-            <td :id="`Sábado-${slot}`" @click="openOptions('Sábado', slot)">
-              {{ calendar[`Sábado-${slot}`] || "" }}
-            </td>
           </tr>
         </tbody>
       </table>
@@ -45,27 +46,52 @@
       </ul>
     </div>
 
-    <!-- Clases disponibles -->
-    <div class="card clases">
-      <h2>Clases disponibles</h2>
-      <ul>
-        <li v-for="clase in availableClasses" :key="clase.id" @click="addClass(clase)">
-          {{ clase.dia }} {{ clase.hora }} - {{ clase.instrumento }} ({{ clase.maestro }}, Salón {{ clase.salon }})
-        </li>
-      </ul>
-    </div>
-
     <!-- Modal de opciones -->
     <div v-if="showOptions" class="modal">
       <div class="modal-content">
         <h3>Opciones para {{ selectedSlot }}</h3>
+
         <div v-if="calendar[selectedSlot]">
           <p>Clase actual: {{ calendar[selectedSlot] }}</p>
           <button @click="removeClass">Eliminar clase</button>
         </div>
         <div v-else>
           <p>No hay clase asignada.</p>
-          <button @click="addDummyClass">Agregar clase</button>
+
+          <!-- Dropdowns -->
+          <label>Maestro:</label>
+          <select v-model="selectedMaestro">
+            <option disabled value="">-- elegir --</option>
+            <option v-for="m in maestros" :key="m.id" :value="m.id">
+              {{ m.nombre }} ({{ m.especialidad }})
+            </option>
+          </select>
+
+          <label>Alumno:</label>
+          <select v-model="selectedAlumno">
+            <option disabled value="">-- elegir --</option>
+            <option v-for="a in alumnos" :key="a.id" :value="a.id">
+              {{ a.nombre }}
+            </option>
+          </select>
+
+          <label>Instrumento:</label>
+          <select v-model="selectedClase">
+            <option disabled value="">-- elegir --</option>
+            <option v-for="c in clases" :key="c.id" :value="c.id">
+              {{ c.nombre }}
+            </option>
+          </select>
+
+          <label>Salón:</label>
+          <select v-model="selectedSalon">
+            <option disabled value="">-- elegir --</option>
+            <option v-for="s in salones" :key="s.id" :value="s.id">
+              {{ s.nombre }}
+            </option>
+          </select>
+
+          <button @click="confirmarClase">Agregar clase</button>
         </div>
         <button @click="closeOptions">Cerrar</button>
       </div>
@@ -76,31 +102,44 @@
 <script setup>
 import { reactive, ref, computed } from 'vue'
 
+// Props que vienen del App.vue
+const props = defineProps({
+  maestros: Array,
+  alumnos: Array,
+  clases: Array,
+  salones: Array
+})
+
+const emit = defineEmits(["agregar-clase","eliminar-clase"])
+
 const days = ["Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"]
 const calendar = reactive({})
 const message = ref("")
 const showOptions = ref(false)
 const selectedSlot = ref("")
 
-const availableClasses = ref([
-  { id: 1, dia: "Martes", hora: "14:30", instrumento: "Flauta", maestro: "Prof. Sánchez", salon: "104" },
-  { id: 2, dia: "Viernes", hora: "16:00", instrumento: "Piano", maestro: "Prof. García", salon: "102" }
-])
+// Campos seleccionados
+const selectedMaestro = ref("")
+const selectedAlumno = ref("")
+const selectedClase = ref("")
+const selectedSalon = ref("")
 
-// Horarios
-const weekdaySlots = computed(() => {
+// Horarios de sábado: 10:00 → 13:45
+const saturdaySlots = computed(() => {
   const slots = []
-  let start = new Date(0,0,0,14,30)
-  for (let i=0; i<7; i++) {
+  let start = new Date(0,0,0,10,0)
+  for (let i=0; i<6; i++) { // 10:00, 10:45, 11:30, 12:15, 13:00, 13:45
     const time = new Date(start.getTime() + i*45*60000)
     slots.push(time.toTimeString().slice(0,5))
   }
   return slots
 })
-const saturdaySlots = computed(() => {
+
+// Horarios de lunes a viernes: 14:30 → 19:00
+const weekdaySlots = computed(() => {
   const slots = []
-  let start = new Date(0,0,0,10,0)
-  for (let i=0; i<8; i++) {
+  let start = new Date(0,0,0,14,30)
+  for (let i=0; i<7; i++) { // 14:30, 15:15, 16:00, 16:45, 17:30, 18:15, 19:00
     const time = new Date(start.getTime() + i*45*60000)
     slots.push(time.toTimeString().slice(0,5))
   }
@@ -116,26 +155,29 @@ function closeOptions() {
   showOptions.value = false
 }
 function removeClass() {
+  emit("eliminar-clase", selectedSlot.value)
   delete calendar[selectedSlot.value]
   message.value = "❌ Clase eliminada."
   closeOptions()
 }
-function addDummyClass() {
-  calendar[selectedSlot.value] = "Nueva clase\nProfesor X\nSalón Y"
-  message.value = "✅ Clase agregada."
-  closeOptions()
-}
-function hasConflict(dia, hora) {
-  return !!calendar[`${dia}-${hora}`]
-}
-function addClass(clase) {
-  if (hasConflict(clase.dia, clase.hora)) {
-    message.value = "⚠️ Conflicto: Ya existe una clase en ese horario."
+function confirmarClase() {
+  if (!selectedMaestro.value || !selectedAlumno.value || !selectedClase.value || !selectedSalon.value) {
+    message.value = "⚠️ Debes seleccionar todos los campos."
     return
   }
-  calendar[`${clase.dia}-${clase.hora}`] = `${clase.instrumento}\n${clase.maestro}\nSalón ${clase.salon}`
-  message.value = "✅ Clase agregada correctamente."
-  availableClasses.value = availableClasses.value.filter(c => c.id !== clase.id)
+
+  emit("agregar-clase", {
+    dia: selectedSlot.value.split("-")[0],
+    hora: selectedSlot.value.split("-")[1],
+    maestro_id: selectedMaestro.value,
+    alumno_id: selectedAlumno.value,
+    clase_id: selectedClase.value,
+    salon_id: selectedSalon.value
+  })
+
+  calendar[selectedSlot.value] = `Clase ${selectedClase.value}\nMaestro ${selectedMaestro.value}\nAlumno ${selectedAlumno.value}\nSalón ${selectedSalon.value}`
+  message.value = "✅ Clase agregada."
+  closeOptions()
 }
 </script>
 
@@ -219,7 +261,7 @@ button {
   cursor: pointer;
 }
 button:hover {
-  background: #3498db;
-  color: #fff;
+  background: #3498
+  color #fff;
 }
 </style>
