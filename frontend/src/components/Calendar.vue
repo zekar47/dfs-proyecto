@@ -83,14 +83,6 @@
             </option>
           </select>
 
-          <label>Salón:</label>
-          <select v-model="selectedSalon">
-            <option disabled value="">-- elegir --</option>
-            <option v-for="s in salones" :key="s.id" :value="s.id">
-              {{ s.nombre }}
-            </option>
-          </select>
-
           <button @click="confirmarClase">Agregar clase</button>
         </div>
         <button @click="closeOptions">Cerrar</button>
@@ -100,14 +92,13 @@
 </template>
 
 <script setup>
-import { reactive, ref, computed } from 'vue'
+import { reactive, ref, computed, watch } from 'vue'
 
 // Props que vienen del App.vue
 const props = defineProps({
   maestros: Array,
   alumnos: Array,
   clases: Array,
-  salones: Array
 })
 
 const emit = defineEmits(["agregar-clase","eliminar-clase"])
@@ -161,7 +152,7 @@ function removeClass() {
   closeOptions()
 }
 function confirmarClase() {
-  if (!selectedMaestro.value || !selectedAlumno.value || !selectedClase.value || !selectedSalon.value) {
+  if (!selectedMaestro.value || !selectedAlumno.value || !selectedClase.value) {
     message.value = "⚠️ Debes seleccionar todos los campos."
     return
   }

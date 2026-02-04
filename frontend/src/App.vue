@@ -5,17 +5,20 @@ import Calendar from './components/Calendar.vue'
 const horarios = ref([])
 const clases = ref([])
 const alumnos = ref([])
+const profesores = ref([])
 
 onMounted(async () => {
-  const [resHorarios, resClases, resAlumnos] = await Promise.all([
+  const [resHorarios, resClases, resAlumnos, resProfesores] = await Promise.all([
     fetch("http://localhost:3000/horarios"),
     fetch("http://localhost:3000/clases"),
-    fetch("http://localhost:3000/alumnos")
+    fetch("http://localhost:3000/alumnos"),
+    fetch("http://localhost:3000/profesores")
   ])
 
   horarios.value = await resHorarios.json()
   clases.value = await resClases.json()
   alumnos.value = await resAlumnos.json()
+  profesores.value = await resProfesores.json()
 })
 
 // Funciones para agregar/eliminar clases
@@ -33,6 +36,8 @@ async function eliminarClase(id) {
   await fetch(`http://localhost:3000/horarios/${id}`, { method: "DELETE" })
   horarios.value = horarios.value.filter(h => h.id !== id)
 }
+
+
 </script>
 
 <template>
@@ -48,7 +53,7 @@ async function eliminarClase(id) {
         :horarios="horarios" 
         :clases="clases" 
         :alumnos="alumnos"
-        @agregar-clase="agregarClase"
+        :maestros="profesores"  @agregar-clase="agregarClase"
         @eliminar-clase="eliminarClase"
       />
     </main>
