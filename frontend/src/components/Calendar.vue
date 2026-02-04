@@ -96,6 +96,7 @@ import { reactive, ref, computed, watch } from 'vue'
 
 // Props que vienen del App.vue
 const props = defineProps({
+  horarios: Array,
   maestros: Array,
   alumnos: Array,
   clases: Array,
@@ -137,6 +138,25 @@ const weekdaySlots = computed(() => {
   return slots
 })
 
+// Escuchar cambios en los horarios que vienen del padre (API)
+watch(() => props.horarios, (newHorarios) => {
+  // Limpiamos el calendario local
+  Object.keys(calendar).forEach(key => delete calendar[key])
+  
+  // Llenamos con lo que viene de la API
+  newHorarios.forEach(h => {
+    // Ajustamos el formato de la hora de la API (10:00:00 -> 10:00)
+    const horaLimpia = h.hora_inicio ? h.hora_inicio.slice(0, 5) : h.hora
+    const key = `${h.dia_semana || h.dia}-${horaLimpia}`
+    
+    // Buscamos los nombres para mostrar algo bonito en la celda
+    const m = props.maestros.find(ma => ma.id === h.profesor_id)
+    const c = props.clases.find(cl => cl.id === h.clase_id)
+    
+    calendar[key] = `${c?.nombre || 'Clase'} con ${m?.nombre || 'Prof.'}`
+  })
+}, { immediate: true, deep: true })
+
 // Funciones
 function openOptions(day, slot) {
   selectedSlot.value = `${day}-${slot}`
@@ -153,23 +173,55 @@ function removeClass() {
 }
 function confirmarClase() {
   if (!selectedMaestro.value || !selectedAlumno.value || !selectedClase.value) {
-    message.value = "⚠️ Debes seleccionar todos los campos."
-    return
+    message.value = "⚠️ Debes seleccionar todos los campos.";
+    return;
   }
 
-  emit("agregar-clase", {
-    dia: selectedSlot.value.split("-")[0],
-    hora: selectedSlot.value.split("-")[1],
-    maestro_id: selectedMaestro.value,
-    alumno_id: selectedAlumno.value,
-    clase_id: selectedClase.value,
-    salon_id: selectedSalon.value
-  })
+  // Extraemos día y hora del slot seleccionado
+  const [dia, hora] = selectedSlot.value.split("-");
 
-  calendar[selectedSlot.value] = `Clase ${selectedClase.value}\nMaestro ${selectedMaestro.value}\nAlumno ${selectedAlumno.value}\nSalón ${selectedSalon.value}`
-  message.value = "✅ Clase agregada."
-  closeOptions()
+  // Calculamos hora_fin (45 min después)
+  const [h, m] = hora.split(':').map(Number);
+  const fin = new Date(0, 0, 0, h, m + 45).toTimeString().slice(0, 5);
+
+  const objetoParaAPI = {
+    dia_semana: dia,
+    hora_inicio: hora,
+    hora_fin: fin,
+    profesor_id: selectedMaestro.value, // Cambiado de maestro_id
+    alumno_id: selectedAlumno.value,
+    clase_id: selectedClase.value
+  };
+
+  emit("agregar-clase", objetoParaAPI);
+  closeOptions();
 }
+
+async function agregarClase(nuevaClase) {
+  try {
+    const res = await fetch("http://localhost:3000/horarios", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(nuevaClase)
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      // Si la API devuelve 400 o 409, lanzamos el error
+      alert("Error: " + (data.error || "No se pudo guardar"));
+      return;
+    }
+
+    // Si todo salió bien, actualizamos la lista local
+    horarios.value.push(data);
+    alert("✅ Clase guardada en la base de datos");
+  } catch (error) {
+    console.error("Error de red:", error);
+    alert("No se pudo conectar con el servidor.");
+  }
+}
+
 </script>
 
 <style scoped>
@@ -253,6 +305,6 @@ button {
 }
 button:hover {
   background: #3498
-  color #fff;
+    color #fff;
 }
 </style>
