@@ -56,7 +56,7 @@
 
             if [ ! -d "$PGDATA" ]; then
               echo "📦 Initializing local Postgres cluster in .pgdata"
-            initdb -D "$PGDATA" >/dev/null
+            initdb -D "$PGDATA" -U postgres -A trust >/dev/null
             fi
             echo "🛠 Dev shell ready"
             echo "DB commands:"

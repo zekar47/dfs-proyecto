@@ -99,3 +99,16 @@ Respuesta esperada:
 ---
 
 # 9. Preparar el frontend
+(En otra terminal)
+Instalar dependencias
+```
+cd frontend
+pnpm install
+```
+
+# 10. Servir el frontend
+```
+pnpm dev
+```
+
+Se servirá en localhost:5173
