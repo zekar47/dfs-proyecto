@@ -72,7 +72,7 @@ cd dfs-proyecto
 Esto configurará automáticamente Node, Postgres y pnpm.
 
 ```bash
-nix develop
+nix develop --extra-experimenta-features nix-command --extra-experimental-features flakes
 
 ```
 
